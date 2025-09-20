@@ -8,7 +8,7 @@ const FILE_TYPES = {
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
-const output = document.getElementById("output");
+const fileList = document.getElementById("file-list");
 const dropZone = document.getElementById("dropZone");
 
 const jsonBtn = document.getElementById("json-switch-btn");
@@ -28,7 +28,7 @@ let fileStore = {
   // "filetype": [
   // {
   //  file name (name)
-  //  file index (inex)
+  //  file index (index)
   //  element id (elementId)
   //  file (file)
   // }
@@ -40,9 +40,18 @@ let fileStore = {
   xml: [],
 };
 
+jsonBtn.addEventListener("click", () => {
+  if (jsonEditor.classList.contains("hidden")) {
+    jsonEditor.classList.remove("hidden");
+  } else {
+    jsonEditor.classList.add("hidden");
+  }
+});
+
+// TODO: add event listeners and logic for hidden/unhidden;
+
 // Handle manual file selection
 fileInput.addEventListener("change", () => {
-  console.log(fileInput.files);
   handleFiles(fileInput.files);
 });
 
@@ -64,26 +73,40 @@ dropZone.addEventListener("drop", (e) => {
 
 // Upload button logic
 uploadBtn.addEventListener("click", () => {
-  // if (!selectedFile) {
-  //   output.textContent = "Please select or drop a JSON file.";
-  //   return;
-  // }
-  console.log(fileStore);
-  loadEditors();
+  if (selectedFile) {
+    const list = fileList.querySelectorAll("li");
+    if (list.length > 0) {
+      for (const li of list) {
+        li.innerHTML += " &#x2713;";
+        li.style = "color: green";
+      }
+    }
+    loadEditors();
+  } else {
+    const list = fileList.querySelector("li");
+    list.style =
+      "color: lightcoral; transform: scale(1.15); transition: 0.5s ease;";
+    setTimeout(() => {
+      list.style = "transform: scale(1.0); transition: 0.5s ease;";
+    }, 1000);
+  }
 });
 
 // Utils
 function handleFiles(files) {
   if (files.length > 0) {
+    fileList.innerHTML = "";
     for (const file of files) {
       const ext = file.name.lastIndexOf(".");
-      console.log(ext);
       const fileToStore = {
         name: file.name,
         index: 0,
-        elementId: "",
+        elementId: `file-container`,
         file: file,
       };
+      const li = document.createElement("li");
+      li.innerHTML = file.name;
+      fileList.appendChild(li);
       switch (file.name.substring(ext)) {
         case FILE_TYPES.json:
           fileToStore.index = fileStore.json.length;
@@ -119,7 +142,6 @@ function handleFiles(files) {
 }
 
 function readFile(file) {
-  console.log(file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -130,7 +152,9 @@ function readFile(file) {
   });
 }
 
-function parseToml(tomlData) {}
+function parseToml(tomlData) {
+  
+}
 
 function parseYaml(yamlData) {}
 
@@ -138,61 +162,124 @@ function parseText(textData) {}
 
 function parseXml(xmlData) {}
 
-function processJsonObject(field, parentContainer, key) {
+function processJsonObject(field, parentContainer, key, fileObj) {
+  const childContainer = document.createElement("details");
+  const fieldName = document.createElement("summary");
+
   if (!key) {
-    key = "[data]";
+    key = `${fileObj.name}`;
+    childContainer.open = true; // Open the root element by default
   }
   if (!parentContainer) {
     parentContainer = document.createElement("div");
+    parentContainer.id = fileObj.elementId;
+    // This is now just a wrapper. The .main-prop-drpdwn handles the padding.
+    parentContainer.className = "json-file-container-wrapper";
     jsonEditor.appendChild(parentContainer);
+
+    childContainer.className = "main-prop-drpdwn";
+    fieldName.className = "main-prop-sum";
   }
-  const childContainer = document.createElement("details");
-  const fieldName = document.createElement("summary");
-  fieldName.textContent = `${key}`;
+  fieldName.innerHTML = `${key}`;
 
   childContainer.appendChild(fieldName);
 
-  if (typeof field === "object" && data !== null) {
+  // --- Case 1: Field is an Object or Array ---
+  if (typeof field === "object" && field !== null) {
+    // CHANGED: Create the property list that will act as the grid container.
+    const propertyList = document.createElement("div");
+    propertyList.className = "property-list";
+    // CHANGED: Append the grid container to the details element.
+    childContainer.appendChild(propertyList);
+
     if (Array.isArray(field)) {
-      fieldName.textContent += `[Array, ${field.length} items]`;
-      for (const [item, index] of field) {
-        processJsonObject(item, childContainer, `Index ${index}`);
+      fieldName.innerHTML = `[${fieldName.innerHTML}] <small>(click to expand)</small>`;
+      fieldName.style = "color: var(--arry-clr); text-decoration: underline;";
+      for (let i = 0; i < field.length; i++) {
+        const item = field[i];
+        // CHANGED: The recursive call now appends to `propertyList`, not `childContainer`.
+        processJsonObject(item, propertyList, `Index ${i}`, fileObj);
       }
     } else {
-      fieldName.textContent += `[Object]`;
-      for (const childKey of Object.keys(field)) {
-        processJsonObject(field[childKey], childContainer, childKey);
+      // It's an object
+      fieldName.innerHTML = `{${fieldName.innerHTML}} <small>(click to expand)</small>`;
+      fieldName.style = "color: var(--prop-clr); text-decoration: underline;";
+      for (const childKey in field) {
+        // CHANGED: Added a safety check to ensure the key belongs to the object.
+        if (Object.prototype.hasOwnProperty.call(field, childKey)) {
+          // CHANGED: The recursive call now also appends to `propertyList`.
+          processJsonObject(field[childKey], propertyList, childKey, fileObj);
+        }
       }
     }
     parentContainer.appendChild(childContainer);
-  } else {
+  }
+  // --- Case 2: Field is a Primitive (String, Number, etc.) ---
+  else {
     const entry = document.createElement("div");
-    entry.className = "json-entry";
-    const valueSpan = document.createElement("span");
-    const dataInput = document.createElement("input");
+    entry.className = "json-entry"; // This will have `display: contents`.
 
-    valueSpan.textContent = String(field);
+    // CHANGED: This is now a LABEL for the property, not a span for the value.
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "json-entry-label";
+    labelSpan.textContent = key; // Use the key for the label.
+
+    const dataInput = document.createElement("input");
+    dataInput.className = "json-entry-input";
+    dataInput.value = field; // CHANGED: Set the input's value to the field data.
+
+    // Your existing type logic is perfect.
     if (typeof field === "number") {
       dataInput.type = "number";
     } else if (field === null || field === undefined) {
       dataInput.type = "text";
+      dataInput.placeholder = String(field); // Show null/undefined as placeholder
     } else {
       dataInput.type = "text";
     }
-    entry.append(valueSpan, dataInput);
+
+    // CHANGED: Append the new label and the input.
+    entry.append(labelSpan, dataInput);
     parentContainer.appendChild(entry);
   }
 }
 
 function loadEditors() {
+  jsonBtn.textContent = `JSON (${fileStore.json.length})`;
+  tomlBtn.textContent = `TOML (${fileStore.toml.length})`;
+  yamlBtn.textContent = `YML (${fileStore.yaml.length})`;
+  textBtn.textContent = `TXT (${fileStore.txt.length})`;
+  xmlBtn.textContent = `XML (${fileStore.xml.length})`;
+  if (fileStore.json.length === 0) {
+    jsonBtn.style = "background-color: var(--muted); cursor: not-allowed;";
+    jsonBtn.disabled = true;
+  }
+  if (fileStore.toml.length === 0) {
+    tomlBtn.style = "background-color: var(--muted); cursor: not-allowed;";
+    tomlBtn.disabled = true;
+  }
+  if (fileStore.yaml.length === 0) {
+    yamlBtn.style = "background-color: var(--muted); cursor: not-allowed;";
+    yamlBtn.disabled = true;
+  }
+  if (fileStore.txt.length === 0) {
+    textBtn.style = "background-color: var(--muted); cursor: not-allowed;";
+    textBtn.disabled = true;
+  }
+  if (fileStore.xml.length === 0) {
+    xmlBtn.style = "background-color: var(--muted); cursor: not-allowed;";
+    xmlBtn.disabled = true;
+  }
+
   for (const fileObj of fileStore.json) {
     readFile(fileObj.file)
       .then((data) => {
         const jsonFields = JSON.parse(data);
-        processJsonObject(jsonFields);
+        processJsonObject(jsonFields, null, null, fileObj);
       })
       .catch((err) => {
         alert(err);
+        console.error(err);
         // TODO: implement better error handling, likely a notification thing
       });
   }

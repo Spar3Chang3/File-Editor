@@ -10,34 +10,40 @@
     <body>
         <div class="upload-container">
             <div class="upload-handler">
-                <h1>Upload JSON</h1>
+                <h1>Upload Files</h1>
 
                 <label for="fileInput" class="drop-zone" id="dropZone">
                     <span>Click or drag & drop your file here</span>
                 </label>
-                <input type="file" id="fileInput" accept=".json" />
+                <input
+                    type="file"
+                    id="fileInput"
+                    accept=".json, .toml, .yml, .txt, .xml"
+                />
 
                 <button id="uploadBtn">Upload</button>
             </div>
-            <div class="file-list"></div>
+            <div class="file-handler">
+                <h1>File List</h1>
+                <ul class="file-list" id="file-list" style="margin: 0">
+                    <li>No files uploaded yet...</li>
+                </ul>
+                <button
+                    style="opacity: 0; cursor: default"
+                    disabled
+                    aria-label="spacer button"
+                >
+                    Upload
+                </button>
+            </div>
         </div>
         <div class="editor-container">
             <div class="tab-list">
-                <button class="json-switch hidden" id="json-switch-btn">
-                    JSON
-                </button>
-                <button class="toml-switch hidden" id="toml-switch-btn">
-                    TOML
-                </button>
-                <button class="yaml-switch hidden" id="yaml-switch-btn">
-                    YML
-                </button>
-                <button class="text-switch hidden" id="text-switch-btn">
-                    TXT
-                </button>
-                <button class="xml-switch hidden" id="xml-switch-btn">
-                    XML
-                </button>
+                <button class="json-switch" id="json-switch-btn">JSON</button>
+                <button class="toml-switch" id="toml-switch-btn">TOML</button>
+                <button class="yaml-switch" id="yaml-switch-btn">YML</button>
+                <button class="text-switch" id="text-switch-btn">TXT</button>
+                <button class="xml-switch" id="xml-switch-btn">XML</button>
             </div>
             <div class="json-editors hidden" id="json-editor-container"></div>
             <div class="toml-editors hidden" id="toml-editor-container"></div>
