@@ -1,0 +1,36 @@
+# Top-level application settings
+title = "My Awesome App"
+debug_mode = true
+
+# Owner Information
+[owner]
+name = "John Doe"
+contact = "john.doe@example.com"
+
+# Nested Database Configuration
+# This shows how `database.primary` creates a nested object.
+[database.primary]
+ip = "192.168.1.1"
+ports = [ 8001, 8002, 8003 ] # This is an inline array.
+enabled = true
+
+[database.replica]
+ip = "192.168.1.2"
+enabled = false
+
+# Array of Tables for different server nodes
+# Each [[nodes]] block creates a new object in the 'nodes' array.
+[[nodes]]
+name = "alpha"
+role = "frontend"
+cores = 4
+
+[[nodes]]
+name = "beta"
+role = "worker"
+cores = 8
+
+[[nodes]]
+name = "gamma"
+role = "worker"
+cores = 8

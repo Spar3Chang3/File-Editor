@@ -6,6 +6,11 @@ const FILE_TYPES = {
   xml: ".xml",
 };
 
+const COMMENT_REGEX = /^\s*#|^\s*$/;
+const FIELD_REGEX = /^\[([^\]]+)\]$/;
+const FIELD_ARRAY_REGEX = /^\[\[([^\]]+)\]\]$/;
+const PROP_REGEX = /^([^=]+?)\s*=\s*([^#]*)(#.*)?$/;
+
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const fileList = document.getElementById("file-list");
@@ -152,8 +157,197 @@ function readFile(file) {
   });
 }
 
-function parseToml(tomlData) {
-  
+function createTomlEntry(key, value) {
+  const entry = document.createElement("div");
+  entry.className = "toml-entry";
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "toml-entry-label";
+  labelSpan.textContent = key;
+
+  const dataInput = document.createElement("input");
+  dataInput.className = "toml-entry-input";
+  dataInput.value = value;
+
+  if (typeof value === "number") {
+    dataInput.type = "number";
+  } else if (value === null || typeof value === undefined) {
+    dataInput.type = "text";
+    dataInput.placeholder = String(value);
+  } else {
+    dataInput.type = "text";
+  }
+
+  entry.append(labelSpan, dataInput);
+  return entry;
+}
+
+function parseToml(tomlData, fileObj) {
+  let tomlObj = {};
+  const lines = tomlData.split("\n");
+
+  const parentWrapper = document.createElement("div");
+  parentWrapper.id = fileObj.elementId;
+  parentWrapper.className = "toml-file-container-wrapper";
+
+  const mainDetails = document.createElement("details");
+  mainDetails.className = "main-prop-drpdwn";
+  mainDetails.open = true;
+
+  const mainSummary = document.createElement("summary");
+  mainSummary.className = "main-prop-sum";
+  mainSummary.innerHTML = `[${fileObj.name}]`;
+  mainDetails.appendChild(mainSummary);
+
+  const mainPropertyList = document.createElement("div");
+  mainPropertyList.className = "property-list";
+  mainDetails.appendChild(mainPropertyList);
+
+  parentWrapper.appendChild(mainDetails);
+  tomlEditor.appendChild(parentWrapper);
+
+  let currentObject = tomlObj;
+  let currentContainer = mainPropertyList;
+
+  const containerMap = new WeakMap();
+  containerMap.set(tomlObj, mainPropertyList);
+
+  for (const line of lines) {
+    const dataLine = line.trim();
+
+    if (COMMENT_REGEX.test(dataLine) || dataLine === "") {
+      continue;
+    } else if (FIELD_ARRAY_REGEX.test(dataLine)) {
+      const match = dataLine.match(FIELD_ARRAY_REGEX);
+      const parts = match[1].split(".");
+
+      let parentObj = tomlObj;
+      let parentContainer = mainPropertyList;
+
+      // Navigate to the parent object, and create field if none exist
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
+        if (!parentObj[part]) {
+          parentObj[part] = {};
+          const newDetails = document.createElement("details");
+          const newSummary = document.createElement("summary");
+          newSummary.innerHTML = `${part} <small>(click to expand)</small>`;
+          newSummary.style =
+            "color: var(--prop-clr); text-decoration: underline;";
+          newDetails.appendChild(newSummary);
+          const newPropertyList = document.createElement("div");
+          newPropertyList.className = "property-list";
+          newDetails.appendChild(newPropertyList);
+          parentContainer.appendChild(newDetails);
+
+          parentContainer = newPropertyList;
+          containerMap.set(parentObj[part], newPropertyList); // Store for later if one exists
+        } else {
+          parentContainer = containerMap.get(parentObj[part]);
+        }
+        parentObj = parentObj[part];
+      }
+      // Then create or get the array and add array field
+      const arrayKey = parts[parts.length - 1];
+      if (!parentObj[arrayKey]) {
+        parentObj[arrayKey] = [];
+      }
+
+      const newIndex = parentObj[arrayKey].length;
+
+      const newArrFieldObj = {};
+      parentObj[arrayKey].push(newArrFieldObj);
+
+      // Create the elements
+      const newDetails = document.createElement("details");
+      const newSummary = document.createElement("summary");
+      newSummary.innerHTML = `${arrayKey} (${newIndex}) <small>(click to expand)</small>`;
+      newSummary.style = "color: var(--arry-clr); text-decoration: underline;";
+      newDetails.appendChild(newSummary);
+
+      const newPropertyList = document.createElement("div");
+      newPropertyList.className = "property-list";
+      newDetails.appendChild(newPropertyList);
+      parentContainer.appendChild(newDetails);
+
+      // Set current context :3
+      currentObject = newArrFieldObj;
+      currentContainer = newPropertyList;
+      containerMap.set(newArrFieldObj, newPropertyList);
+    } else if (FIELD_REGEX.test(dataLine)) {
+      const match = dataLine.match(FIELD_REGEX);
+      const parts = match[1].split(".");
+
+      let currentParentObj = tomlObj;
+      let currentParentContainer = mainPropertyList;
+
+      for (const part of parts) {
+        let childObj = currentParentObj[part];
+
+        // If there's no child, baby we're gonna make one ;)
+        if (!childObj) {
+          childObj = {};
+          currentParentObj[part] = childObj;
+
+          const newDetails = document.createElement("details");
+          const newSummary = document.createElement("summary");
+          newSummary.innerHTML = `${part} <small>(click to expand)</small>`;
+          newSummary.style =
+            "color: var(--prop-clr); text-decoration: underline;";
+          newDetails.appendChild(newSummary);
+          const newPropertyList = document.createElement("div");
+          newPropertyList.className = "property-list";
+          newDetails.appendChild(newPropertyList);
+          currentParentContainer.appendChild(newDetails);
+          containerMap.set(childObj, newPropertyList);
+        }
+
+        currentParentObj = childObj;
+        currentParentContainer = containerMap.get(childObj);
+      }
+
+      // Update main context
+      currentObject = currentParentObj;
+      currentContainer = currentParentContainer;
+    } else if (PROP_REGEX.test(dataLine)) {
+      const match = dataLine.match(PROP_REGEX);
+      const key = match[1].trim();
+      const valueStr = match[2].trim();
+
+      const value = parseValueFromString(valueStr);
+
+      if (Array.isArray(value)) {
+        // This block now handles arrays correctly, Iiiii think
+        currentObject[key] = value;
+
+        const arrayDetails = document.createElement("details");
+        const arraySummary = document.createElement("summary");
+        arraySummary.innerHTML = `${key} <small>(click to expand)</small>`;
+        arraySummary.style =
+          "color: var(--arry-clr); text-decoration: underline;";
+        arrayDetails.appendChild(arraySummary);
+
+        const arrayPropertyList = document.createElement("div");
+        arrayPropertyList.className = "property-list";
+        arrayDetails.appendChild(arrayPropertyList);
+
+        currentContainer.appendChild(arrayDetails);
+
+        // Iterate through the ACTUAL parsed array and create an input for each item.
+        value.forEach((item, index) => {
+          const entry = createTomlEntry(`Index ${index}`, item);
+          arrayPropertyList.appendChild(entry);
+        });
+      } else {
+        // This block handles all primitives (string, number, boolean).
+        currentObject[key] = value;
+        const entry = createTomlEntry(key, value);
+        currentContainer.appendChild(entry);
+      }
+    }
+  }
+
+  console.log(tomlObj);
 }
 
 function parseYaml(yamlData) {}
@@ -198,7 +392,7 @@ function processJsonObject(field, parentContainer, key, fileObj) {
       for (let i = 0; i < field.length; i++) {
         const item = field[i];
         // CHANGED: The recursive call now appends to `propertyList`, not `childContainer`.
-        processJsonObject(item, propertyList, `Index ${i}`, fileObj);
+        processJsonObject(item, propertyList, `Index`, fileObj);
       }
     } else {
       // It's an object
@@ -283,4 +477,43 @@ function loadEditors() {
         // TODO: implement better error handling, likely a notification thing
       });
   }
+
+  for (const fileObj of fileStore.toml) {
+    readFile(fileObj.file)
+      .then((data) => {
+        const tomlFields = parseToml(data, fileObj);
+      })
+      .catch((err) => {
+        alert(err);
+        console.error(err);
+      });
+  }
+}
+
+function parseValueFromString(valStr) {
+  const s = valStr.trim();
+
+  // 1. Handle Array: Recursively parse each element.
+  if (s.startsWith("[") && s.endsWith("]")) {
+    const inner = s.slice(1, -1).trim(); // Get content inside brackets
+    if (inner === "") return []; // Handle empty array
+    // Split by comma and recursively call this function on each element
+    return inner.split(",").map((el) => parseValueFromString(el.trim()));
+  }
+
+  // 2. Handle Boolean
+  if (s === "true") return true;
+  if (s === "false") return false;
+
+  // 3. Handle String
+  if (s.startsWith('"') && s.endsWith('"')) {
+    return s.slice(1, -1);
+  }
+
+  // 4. Handle Number
+  const num = Number(s);
+  if (!isNaN(num) && s !== "") return num;
+
+  // 5. Default: Return the trimmed string if no other type matches
+  return s;
 }

@@ -37,7 +37,7 @@
     --edtr-ttl-fnt-sz: 2rem;
     --edtr-prop-fnt-sz: 1.5rem;
     --prop-clr: #0b69b3;
-    --arry-clr: #0d9488;
+    --arry-clr: rebeccapurple;
     --num-clr: #c026d3;
     --str-clr: #16a34a;
 }
@@ -195,7 +195,8 @@ input[type="file"] {
     overflow-y: scroll;
 }
 
-.json-editors {
+.json-editors,
+.toml-editors {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -210,7 +211,8 @@ input[type="file"] {
 /* --- NEW & IMPROVED JSON Tree Styling --- */
 
 /* This is the outer container for a single JSON file's editor */
-.json-file-container-wrapper {
+.json-file-container-wrapper,
+.toml-file-container-wrapper {
     width: 100%;
     min-width: max-content; /* Allows container to grow with content */
 }
@@ -256,18 +258,21 @@ summary {
 }
 
 /* Grid Item Styling */
-.json-entry {
+.json-entry,
+.toml-entry {
     display: contents;
 }
 
-.json-entry-label {
+.json-entry-label,
+.toml-entry-label {
     grid-column: 1;
     white-space: nowrap;
     color: var(--prop-clr);
     font-size: var(--edtr-prop-fnt-sz);
 }
 
-.json-entry-input {
+.json-entry-input,
+.toml-entry-input {
     grid-column: 2;
     width: 100%;
     padding: 0.5rem;
@@ -283,14 +288,16 @@ summary {
     }
 }
 
-.json-entry-input:focus {
+.json-entry-input:focus,
+.toml-entry-input:focus {
     outline: 2px solid var(--accent);
     border-color: var(--accent);
 }
 
 /* Tree Line Pseudo-Elements (Connectors) */
 .property-list > details > summary::before,
-.property-list > .json-entry::before {
+.property-list > .json-entry::before,
+.property-list > .toml-entry::before {
     content: "";
     position: absolute;
     left: -1.25rem;

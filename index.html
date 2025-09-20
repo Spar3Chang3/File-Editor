@@ -18,6 +18,7 @@
                 <input
                     type="file"
                     id="fileInput"
+                    multiple
                     accept=".json, .toml, .yml, .txt, .xml"
                 />
 
@@ -46,10 +47,10 @@
                 <button class="xml-switch" id="xml-switch-btn">XML</button>
             </div>
             <div class="json-editors hidden" id="json-editor-container"></div>
-            <div class="toml-editors hidden" id="toml-editor-container"></div>
-            <div class="yaml-editors hidden" id="yaml-editor-container"></div>
-            <div class="text-editors hidden" id="text-editor-container"></div>
-            <div class="xml-editors hidden" id="xml-editor-container"></div>
+            <div class="toml-editors" id="toml-editor-container"></div>
+            <div class="yaml-editors" id="yaml-editor-container"></div>
+            <div class="text-editors" id="text-editor-container"></div>
+            <div class="xml-editors" id="xml-editor-container"></div>
         </div>
     </body>
 </html>
