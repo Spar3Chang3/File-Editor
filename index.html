@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>JSON Uploader</title>
+
+        <script src="/script.js" defer type="module"></script>
+        <link rel="stylesheet" href="/style.css" />
+    </head>
+    <body>
+        <div class="upload-container">
+            <div class="upload-handler">
+                <h1>Upload JSON</h1>
+
+                <label for="fileInput" class="drop-zone" id="dropZone">
+                    <span>Click or drag & drop your file here</span>
+                </label>
+                <input type="file" id="fileInput" accept=".json" />
+
+                <button id="uploadBtn">Upload</button>
+            </div>
+            <div class="file-list"></div>
+        </div>
+        <div class="editor-container">
+            <div class="tab-list">
+                <button class="json-switch hidden" id="json-switch-btn">
+                    JSON
+                </button>
+                <button class="toml-switch hidden" id="toml-switch-btn">
+                    TOML
+                </button>
+                <button class="yaml-switch hidden" id="yaml-switch-btn">
+                    YML
+                </button>
+                <button class="text-switch hidden" id="text-switch-btn">
+                    TXT
+                </button>
+                <button class="xml-switch hidden" id="xml-switch-btn">
+                    XML
+                </button>
+            </div>
+            <div class="json-editors hidden" id="json-editor-container"></div>
+            <div class="toml-editors hidden" id="toml-editor-container"></div>
+            <div class="yaml-editors hidden" id="yaml-editor-container"></div>
+            <div class="text-editors hidden" id="text-editor-container"></div>
+            <div class="xml-editors hidden" id="xml-editor-container"></div>
+        </div>
+    </body>
+</html>

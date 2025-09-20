@@ -1,0 +1,40 @@
+{
+  "projectName": "Project Phoenix",
+  "id": "a1b2-c3d4-e5f6",
+  "version": 1.2,
+  "status": "Active",
+  "lead": {
+    "name": "Alice Johnson",
+    "email": "alice.j@example.com",
+    "address": {
+      "city": "Metropolis",
+      "zip": "12345"
+    }
+  },
+  "teamMembers": [
+    {
+      "name": "Bob Smith",
+      "role": "Developer",
+      "skills": [
+        "JavaScript",
+        "React",
+        "Node.js"
+      ]
+    },
+    {
+      "name": "Charlie Brown",
+      "role": "Designer",
+      "skills": [
+        "Figma",
+        "CSS",
+        "UX"
+      ]
+    }
+  ],
+  "milestones": null,
+  "tags": [
+    "web-app",
+    "data-visualization",
+    "internal-tool"
+  ]
+}
